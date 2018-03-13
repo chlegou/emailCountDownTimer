@@ -23,19 +23,31 @@
     }
 
 
-	$future_date = new DateTime(date('r',strtotime($time)));
+
+    $imagePath = 'images/countdown-background-v2.png';
+
+    //default height and width in pixel
+    $imageDimensions = getimagesize($imagePath);
+    /*$width = (isset($_GET['width']) && !empty($_GET['width']) && ($_GET['width'] < $imageDimensions[0])) ? $_GET['width'] : $imageDimensions[0];
+    $height = (isset($_GET['height']) && !empty($_GET['height']) && ($_GET['height'] < $imageDimensions[1])) ? $_GET['height'] : $imageDimensions[1];*/
+    $width = (isset($_GET['width']) && !empty($_GET['width']) ) ? $_GET['width'] : $imageDimensions[0];
+    $height = (isset($_GET['height']) && !empty($_GET['height'])) ? $_GET['height'] : $imageDimensions[1];
+
+
+    $future_date = new DateTime(date('r',strtotime($time)));
 	$time_now = time();
 	$now = new DateTime(date('r', $time_now));
 	$frames = array();	
 	$delays = array();
 
-	// this function will create a copy from the source file image.
-    function copyTransparent($src, $red, $green, $blue)
+	// this function will create a centered copy from the source file image.
+    function copyTransparent($src, $newWidth, $newHeight, $red, $green, $blue)
     {
         $dimensions = getimagesize($src);
         $x = $dimensions[0];
         $y = $dimensions[1];
-        $im = imagecreatetruecolor($x,$y);
+//        $im = imagecreatetruecolor( ($newWidth <= $x) ? $newWidth : $x , ($newHeight <= $y) ? $newHeight : $y);
+        $im = imagecreatetruecolor( $newWidth, $newHeight );
         $src_ = imagecreatefrompng($src);
         // Prepare alpha channel for transparent background
         // alpha must be zero!!!!
@@ -44,7 +56,8 @@
         // Fill image
         imagefill($im, 0, 0, $alpha_channel);
         // Copy from other
-        imagecopy($im,$src_, 0, 0, 0, 0, $x, $y);
+        imagecopy($im,$src_, ($x - $newWidth < 0) ? ($newWidth- $x) / 2 : 0, ($y - $newHeight < 0) ? ($newHeight- $y) / 2 : 0, ($x - $newWidth >= 0) ? ($x - $newWidth) / 2 : 0, ($y - $newHeight >= 0) ? ($y - $newHeight) / 2 : 0, $x, $y);
+//        imagecopy($im,$src_, 0, 0, 2,  2, $x, $y);
         // Save transparency
         imagesavealpha($im,true);
 
@@ -54,11 +67,10 @@
         imagedestroy($im);*/
     }
 
-	$imagePath = 'images/countdown-background.png';
 
 
     // Your image link
-	$image = copyTransparent($imagePath, $r, $g, $b);
+	$image = copyTransparent($imagePath, $width, $height, $r, $g, $b);
 
 
 	$delay = 100;// milliseconds
@@ -67,8 +79,14 @@
 	$font = array(
 		'size' => 30, // Font size, in pts usually.
 		'angle' => 0, // Angle of the text
-		'x-offset' => 172, // The larger the number the further the distance from the left hand side, 0 to align to the left.
-		'y-offset' => 53, // The vertical alignment, trial and error between 20 and 60.
+        // The larger the number the further the distance from the left hand side, 0 to align to the left.
+        'x-offset' => array(// +73 offset
+            'days' => 174 - ($imageDimensions[0] - $width) / 2 ,
+            'hours' => 247 - ($imageDimensions[0] - $width) / 2 ,
+            'minutes' => 320 - ($imageDimensions[0] - $width) / 2 ,
+            'seconds' => 394 - ($imageDimensions[0] - $width) / 2 ,
+        ),
+        'y-offset' => 150 - ($imageDimensions[1] - $height) / 2 , // The vertical alignment, trial and error between 20 and 60.
 		'file' => 'fonts/BEBASNEUE-REGULAR.ttf', // Font path
 		'color' => imagecolorallocate($image, 255, 255, 255), // RGB Colour of the text
 	);
@@ -78,12 +96,19 @@
 		
 		if($future_date < $now){
 			// Open the first source image and add the text.
-			$image = copyTransparent($imagePath, $r, $g, $b);
+			$image = copyTransparent($imagePath, $width, $height, $r, $g, $b);
 
 
-			$text = $interval->format('00       00       00       00');
-			imagettftext ($image , $font['size'] , $font['angle'] , $font['x-offset'] , $font['y-offset'] , $font['color'] , $font['file'], $text );
-			ob_start();
+			// days
+            imagettftext ($image , $font['size'] , $font['angle'] , $font['x-offset']['days'] , $font['y-offset'] , $font['color'] , $font['file'], '00' );
+            // hours
+            imagettftext ($image , $font['size'] , $font['angle'] , $font['x-offset']['hours'] , $font['y-offset'] , $font['color'] , $font['file'], '00' );
+            // minutes
+            imagettftext ($image , $font['size'] , $font['angle'] , $font['x-offset']['minutes'] , $font['y-offset'] , $font['color'] , $font['file'], '00' );
+            // seconds
+            imagettftext ($image , $font['size'] , $font['angle'] , $font['x-offset']['seconds'] , $font['y-offset'] , $font['color'] , $font['file'], '00' );
+
+            ob_start();
 			imagegif($image);
 			$frames[]=ob_get_contents();
 			$delays[]=$delay;
@@ -92,15 +117,26 @@
 			break;
 		} else {
 			// Open the first source image and add the text.
-			$image = copyTransparent($imagePath, $r, $g, $b);
+			$image = copyTransparent($imagePath, $width, $height, $r, $g, $b);
 
-			$text = $interval->format('%a       %H       %I       %S');
+			$days = $interval->format('%a');
 			//add zero padding for days
-            if(preg_match('/^[0-9]\ /', $text)){
-                $text = '0'.$text;
+            if(strlen($days) == 1){
+                $days = '0'.$days;
             }
-			imagettftext ($image , $font['size'] , $font['angle'] , $font['x-offset'] , $font['y-offset'] , $font['color'] , $font['file'], $text );
-			ob_start();
+            // days
+            imagettftext ($image , $font['size'] , $font['angle'] , $font['x-offset']['days'] , $font['y-offset'] , $font['color'] , $font['file'], $days );
+            // hours
+            imagettftext ($image , $font['size'] , $font['angle'] , $font['x-offset']['hours'] , $font['y-offset'] , $font['color'] , $font['file'], $interval->format('%H') );
+            // minutes
+            imagettftext ($image , $font['size'] , $font['angle'] , $font['x-offset']['minutes'] , $font['y-offset'] , $font['color'] , $font['file'], $interval->format('%I') );
+            // seconds
+            imagettftext ($image , $font['size'] , $font['angle'] , $font['x-offset']['seconds'] , $font['y-offset'] , $font['color'] , $font['file'], $interval->format('%S') );
+
+
+
+
+            ob_start();
 			imagegif($image);
 			$frames[]=ob_get_contents();
 			$delays[]=$delay;
