@@ -8,10 +8,13 @@
     // demoLink: http://localhost:999/demos/demo-emailCountdownTimer/gif.php?time=2018-03-20+00:00:01&background=00ee00&timezone=Africa/Tunis
 
 
+    // if no time was set, we put a default expired one
     $time = (isset($_GET['time']) && !empty($_GET['time'])) ? $_GET['time'] : '2000-03-20+00:00:01';
+    // default white background
     $background = (isset($_GET['background']) && !empty($_GET['background']) && (ctype_xdigit($_GET['background']) && strlen($_GET['background'])==6)) ? $_GET['background'] : 'ffffff';
     list($r, $g, $b) = array_map('hexdec', str_split($background, 2));
 
+    // default UTC timezone
     $timezone = (isset($_GET['timezone']) && !empty($_GET['timezone'])) ? $_GET['timezone'] : 'UTC';
     // http://php.net/manual/en/timezones.php
     // if the given timezone isn't correct, we set it to default UTC timezone
@@ -60,15 +63,13 @@
 
 	$delay = 100;// milliseconds
 
-    $loops = 0; // loops
-
     // when changing fonts, we need to adjust the position!!!!
 	$font = array(
-		'size' => 24, // Font size, in pts usually.
+		'size' => 30, // Font size, in pts usually.
 		'angle' => 0, // Angle of the text
 		'x-offset' => 172, // The larger the number the further the distance from the left hand side, 0 to align to the left.
-		'y-offset' => 50, // The vertical alignment, trial and error between 20 and 60.
-		'file' => __DIR__ . DIRECTORY_SEPARATOR . 'VarelaRound-Regular.ttf', // Font path
+		'y-offset' => 53, // The vertical alignment, trial and error between 20 and 60.
+		'file' => 'fonts/BEBASNEUE-REGULAR.ttf', // Font path
 		'color' => imagecolorallocate($image, 255, 255, 255), // RGB Colour of the text
 	);
 	for($i = 0; $i <= 60; $i++){
@@ -80,7 +81,7 @@
 			$image = copyTransparent($imagePath, $r, $g, $b);
 
 
-			$text = $interval->format('00    00    00    00');
+			$text = $interval->format('00       00       00       00');
 			imagettftext ($image , $font['size'] , $font['angle'] , $font['x-offset'] , $font['y-offset'] , $font['color'] , $font['file'], $text );
 			ob_start();
 			imagegif($image);
@@ -93,7 +94,7 @@
 			// Open the first source image and add the text.
 			$image = copyTransparent($imagePath, $r, $g, $b);
 
-			$text = $interval->format('%a    %H    %I    %S');
+			$text = $interval->format('%a       %H       %I       %S');
 			//add zero padding for days
             if(preg_match('/^[0-9]\ /', $text)){
                 $text = '0'.$text;
@@ -110,7 +111,7 @@
 		$now->modify('+1 second');
 	}
 
-	//expire this image instantly
+	// expire this image instantly
 	header( 'Expires: Sat, 26 Jul 1997 05:00:00 GMT' );
 	header( 'Last-Modified: ' . gmdate( 'D, d M Y H:i:s' ) . ' GMT' );
 	header( 'Cache-Control: no-store, no-cache, must-revalidate' );
