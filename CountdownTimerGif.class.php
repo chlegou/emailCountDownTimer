@@ -21,7 +21,6 @@ class CountdownTimerGif
 
         // calculate rgb from hexdec color
         list($r, $g, $b) = array_map('hexdec', str_split($backgroundColor, 2));
-//        echo $r.' '.$g.' '.$b.' ';
 
         // default height and width in pixel
         $imageDimensions = getimagesize($imagePath);
@@ -136,7 +135,7 @@ class CountdownTimerGif
          * it was making it transparent in #000000 example.
          * Instead, like this example, #775151, it must be used to clear the background.
          */
-        if($red === 0 && $green === 0 && $blue ===0){}else{
+        if(!($red === 0 && $green === 0 && $blue ===0)){
             imagecolortransparent($im, $alpha_channel);
         }
         // Fill image
