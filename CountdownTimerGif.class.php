@@ -21,6 +21,7 @@ class CountdownTimerGif
 
         // calculate rgb from hexdec color
         list($r, $g, $b) = array_map('hexdec', str_split($backgroundColor, 2));
+//        echo $r.' '.$g.' '.$b.' ';
 
         // default height and width in pixel
         $imageDimensions = getimagesize($imagePath);
@@ -43,7 +44,7 @@ class CountdownTimerGif
             ),
             'y-offset' => 150 - ($imageDimensions[1] - $height) / 2 , // The vertical alignment, trial and error between 20 and 60.
             'file' => 'fonts/BEBASNEUE-REGULAR.ttf', // Font path
-            'color' => imagecolorallocate($image, 255, 255, 255), // RGB Colour of the text
+            'color' => imagecolorallocatealpha($image, 255, 255, 255, 0), // RGB Colour of the text
         );
 
 
@@ -129,7 +130,15 @@ class CountdownTimerGif
         // Prepare alpha channel for transparent background
         // alpha must be zero!!!!
         $alpha_channel = imagecolorallocatealpha($im, $red, $green, $blue, 0);
-        imagecolortransparent($im, $alpha_channel);
+        /*
+         * UPDATE_2018-03-16:
+         * In a way to get real black background, we must bypass this function
+         * it was making it transparent in #000000 example.
+         * Instead, like this example, #775151, it must be used to clear the background.
+         */
+        if($red === 0 && $green === 0 && $blue ===0){}else{
+            imagecolortransparent($im, $alpha_channel);
+        }
         // Fill image
         imagefill($im, 0, 0, $alpha_channel);
         // Copy from other
