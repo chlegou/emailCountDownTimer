@@ -10,9 +10,13 @@ include 'GIFEncoder.class.php';
 // needed only for <= PHP2.5
 include 'php52-fix.php';
 
+//including the imagettftextblur function
+include 'imagettftextblur.php';
+
+
 class CountdownTimerGif
 {
-    public static function create($imagePath, $time, $timezone, $backgroundColor, $width, $height){
+    public static function create($imagePath, $time, $timezone, $backgroundColor, $counterColor, $counterGlowColor, $counterGlowSize, $indicatorsColor, $indicatorsGlowColor, $indicatorsGlowSize, $width, $height){
         // http://php.net/manual/en/timezones.php
         // if the given timezone isn't correct, we set it to default UTC timezone
         if(!date_default_timezone_set($timezone)) {
@@ -20,31 +24,66 @@ class CountdownTimerGif
         }
 
         // calculate rgb from hexdec color
-        list($r, $g, $b) = array_map('hexdec', str_split($backgroundColor, 2));
+        list($backgroundColorRed, $backgroundColorGreen, $backgroundColorBlue) = array_map('hexdec', str_split($backgroundColor, 2));
+
+        // calculate rgb from hexdec color
+        list($counterColorRed, $counterColorGreen, $counterColorBlue) = array_map('hexdec', str_split($counterColor, 2));
+        // calculate rgb from hexdec color
+        list($counterGlowColorRed, $counterGlowColorGreen, $counterGlowColorBlue) = array_map('hexdec', str_split($counterGlowColor, 2));
+
+        // calculate rgb from hexdec color
+        list($indicatorsColorRed, $indicatorsColorGreen, $indicatorsColorBlue) = array_map('hexdec', str_split($indicatorsColor, 2));
+        // calculate rgb from hexdec color
+        list($indicatorsGlowColorRed, $indicatorsGlowColorGreen, $indicatorsGlowColorBlue) = array_map('hexdec', str_split($indicatorsGlowColor, 2));
 
         // default height and width in pixel
         $imageDimensions = getimagesize($imagePath);
 
         // Your image link
-        $image = CountdownTimerGif::copyTransparent($imagePath, $width, $height, $r, $g, $b);
+        $image = CountdownTimerGif::copyTransparent($imagePath, $width, $height, $backgroundColorRed, $backgroundColorGreen, $backgroundColorBlue);
 
         $delay = 100;// milliseconds
 
         // when changing fonts, we need to adjust the position!!!!
         $font = array(
-            'size' => 30, // Font size, in pts usually.
-            'angle' => 0, // Angle of the text
-            // The larger the number the further the distance from the left hand side, 0 to align to the left.
-            'x-offset' => array(// +73 offset
-                'days' => 174 - ($imageDimensions[0] - $width) / 2 ,
-                'hours' => 247 - ($imageDimensions[0] - $width) / 2 ,
-                'minutes' => 320 - ($imageDimensions[0] - $width) / 2 ,
-                'seconds' => 394 - ($imageDimensions[0] - $width) / 2 ,
+            'counter' => array(
+                'size' => 30, // Font size, in pts usually.
+                'angle' => 0, // Angle of the text
+                // The larger the number the further the distance from the left hand side, 0 to align to the left.
+                'x-offset' => array(// +73 offset
+                    'days' => 174 - ($imageDimensions[0] - $width) / 2 ,
+                    'hours' => 247 - ($imageDimensions[0] - $width) / 2 ,
+                    'minutes' => 320 - ($imageDimensions[0] - $width) / 2 ,
+                    'seconds' => 394 - ($imageDimensions[0] - $width) / 2 ,
+                ),
+                'y-offset' => 150 - ($imageDimensions[1] - $height) / 2 , // The vertical alignment, trial and error between 20 and 60.
+                'file' => 'fonts/BEBASNEUE-REGULAR.ttf', // Font path
+                'color' => imagecolorallocatealpha($image, $counterColorRed, $counterColorGreen, $counterColorBlue, 0), // RGB Colour of the text
+                'glowColor' => imagecolorallocatealpha($image, $counterGlowColorRed, $counterGlowColorGreen, $counterGlowColorBlue, 0), // RGB Colour of the text
+                'glowSize' => $counterGlowSize,
             ),
-            'y-offset' => 150 - ($imageDimensions[1] - $height) / 2 , // The vertical alignment, trial and error between 20 and 60.
-            'file' => 'fonts/BEBASNEUE-REGULAR.ttf', // Font path
-            'color' => imagecolorallocatealpha($image, 255, 255, 255, 0), // RGB Colour of the text
+            'indicators' => array(
+                'size' => 10, // Font size, in pts usually.
+                'angle' => 0, // Angle of the text
+                // The larger the number the further the distance from the left hand side, 0 to align to the left.
+                'x-offset' => array(// +73 offset
+                    'days' => 175 - ($imageDimensions[0] - $width) / 2 ,
+                    'hours' => 246 - ($imageDimensions[0] - $width) / 2 ,
+                    'minutes' => 323 - ($imageDimensions[0] - $width) / 2 ,
+                    'seconds' => 400 - ($imageDimensions[0] - $width) / 2 ,
+                ),
+                'y-offset' => 193 - ($imageDimensions[1] - $height) / 2 , // The vertical alignment, trial and error between 20 and 60.
+                'file' => 'fonts/BEBAS.ttf', // Font path
+                'color' => imagecolorallocatealpha($image, $indicatorsColorRed, $indicatorsColorGreen, $indicatorsColorBlue, 0), // RGB Colour of the text
+                'glowColor' => imagecolorallocatealpha($image, $indicatorsGlowColorRed, $indicatorsGlowColorGreen, $indicatorsGlowColorBlue, 0), // RGB Colour of the text
+                'glowSize' => $indicatorsGlowSize,
+            ),
         );
+
+
+
+
+
 
 
         $future_date = new DateTime(date('r',strtotime($time)));
@@ -59,16 +98,31 @@ class CountdownTimerGif
 
             if($future_date < $now){
                 // Open the first source image and add the text.
-                $image = CountdownTimerGif::copyTransparent($imagePath, $width, $height, $r, $g, $b);
+                $image = CountdownTimerGif::copyTransparent($imagePath, $width, $height, $backgroundColorRed, $backgroundColorGreen, $backgroundColorBlue);
+
+                $image = CountdownTimerGif::applyIndicatorsToImage($image, $font);
+
+                // add the glow first
+                if ($font['counter']['glowSize'] > 0) {
+                    // days
+                    imagettftextblur ($image , $font['counter']['size'] , $font['counter']['angle'] , $font['counter']['x-offset']['days'] , $font['counter']['y-offset'] , $font['counter']['glowColor'] , $font['counter']['file'], '00', $font['counter']['glowSize'] );
+                    // hours
+                    imagettftextblur ($image , $font['counter']['size'] , $font['counter']['angle'] , $font['counter']['x-offset']['hours'] , $font['counter']['y-offset'] , $font['counter']['glowColor'] , $font['counter']['file'], '00', $font['counter']['glowSize'] );
+                    // minutes
+                    imagettftextblur ($image , $font['counter']['size'] , $font['counter']['angle'] , $font['counter']['x-offset']['minutes'] , $font['counter']['y-offset'] , $font['counter']['glowColor'] , $font['counter']['file'], '00', $font['counter']['glowSize'] );
+                    // seconds
+                    imagettftextblur ($image , $font['counter']['size'] , $font['counter']['angle'] , $font['counter']['x-offset']['seconds'] , $font['counter']['y-offset'] , $font['counter']['glowColor'] , $font['counter']['file'], '00', $font['counter']['glowSize'] );
+
+                }
 
                 // days
-                imagettftext ($image , $font['size'] , $font['angle'] , $font['x-offset']['days'] , $font['y-offset'] , $font['color'] , $font['file'], '00' );
+                imagettftextblur ($image , $font['counter']['size'] , $font['counter']['angle'] , $font['counter']['x-offset']['days'] , $font['counter']['y-offset'] , $font['counter']['color'] , $font['counter']['file'], '00' );
                 // hours
-                imagettftext ($image , $font['size'] , $font['angle'] , $font['x-offset']['hours'] , $font['y-offset'] , $font['color'] , $font['file'], '00' );
+                imagettftextblur ($image , $font['counter']['size'] , $font['counter']['angle'] , $font['counter']['x-offset']['hours'] , $font['counter']['y-offset'] , $font['counter']['color'] , $font['counter']['file'], '00' );
                 // minutes
-                imagettftext ($image , $font['size'] , $font['angle'] , $font['x-offset']['minutes'] , $font['y-offset'] , $font['color'] , $font['file'], '00' );
+                imagettftextblur ($image , $font['counter']['size'] , $font['counter']['angle'] , $font['counter']['x-offset']['minutes'] , $font['counter']['y-offset'] , $font['counter']['color'] , $font['counter']['file'], '00' );
                 // seconds
-                imagettftext ($image , $font['size'] , $font['angle'] , $font['x-offset']['seconds'] , $font['y-offset'] , $font['color'] , $font['file'], '00' );
+                imagettftextblur ($image , $font['counter']['size'] , $font['counter']['angle'] , $font['counter']['x-offset']['seconds'] , $font['counter']['y-offset'] , $font['counter']['color'] , $font['counter']['file'], '00' );
 
                 ob_start();
                 imagegif($image);
@@ -79,21 +133,37 @@ class CountdownTimerGif
                 break;
             } else {
                 // Open the first source image and add the text.
-                $image = CountdownTimerGif::copyTransparent($imagePath, $width, $height, $r, $g, $b);
+                $image = CountdownTimerGif::copyTransparent($imagePath, $width, $height, $backgroundColorRed, $backgroundColorGreen, $backgroundColorBlue);
+
+                $image = CountdownTimerGif::applyIndicatorsToImage($image, $font);
 
                 $days = $interval->format('%a');
                 //add zero padding for days
                 if(strlen($days) == 1){
                     $days = '0'.$days;
                 }
+
+                // add the glow first
+                if ($font['counter']['glowSize'] > 0) {
+                    // days
+                    imagettftextblur ($image , $font['counter']['size'] , $font['counter']['angle'] , $font['counter']['x-offset']['days'] , $font['counter']['y-offset'] , $font['counter']['glowColor'] , $font['counter']['file'], $days, $font['counter']['glowSize'] );
+                    // hours
+                    imagettftextblur ($image , $font['counter']['size'] , $font['counter']['angle'] , $font['counter']['x-offset']['hours'] , $font['counter']['y-offset'] , $font['counter']['glowColor'] , $font['counter']['file'], $interval->format('%H'), $font['counter']['glowSize'] );
+                    // minutes
+                    imagettftextblur ($image , $font['counter']['size'] , $font['counter']['angle'] , $font['counter']['x-offset']['minutes'] , $font['counter']['y-offset'] , $font['counter']['glowColor'] , $font['counter']['file'], $interval->format('%I'), $font['counter']['glowSize'] );
+                    // seconds
+                    imagettftextblur ($image , $font['counter']['size'] , $font['counter']['angle'] , $font['counter']['x-offset']['seconds'] , $font['counter']['y-offset'] , $font['counter']['glowColor'] , $font['counter']['file'], $interval->format('%S'), $font['counter']['glowSize'] );
+
+                }
+
                 // days
-                imagettftext ($image , $font['size'] , $font['angle'] , $font['x-offset']['days'] , $font['y-offset'] , $font['color'] , $font['file'], $days );
+                imagettftextblur ($image , $font['counter']['size'] , $font['counter']['angle'] , $font['counter']['x-offset']['days'] , $font['counter']['y-offset'] , $font['counter']['color'] , $font['counter']['file'], $days );
                 // hours
-                imagettftext ($image , $font['size'] , $font['angle'] , $font['x-offset']['hours'] , $font['y-offset'] , $font['color'] , $font['file'], $interval->format('%H') );
+                imagettftextblur ($image , $font['counter']['size'] , $font['counter']['angle'] , $font['counter']['x-offset']['hours'] , $font['counter']['y-offset'] , $font['counter']['color'] , $font['counter']['file'], $interval->format('%H') );
                 // minutes
-                imagettftext ($image , $font['size'] , $font['angle'] , $font['x-offset']['minutes'] , $font['y-offset'] , $font['color'] , $font['file'], $interval->format('%I') );
+                imagettftextblur ($image , $font['counter']['size'] , $font['counter']['angle'] , $font['counter']['x-offset']['minutes'] , $font['counter']['y-offset'] , $font['counter']['color'] , $font['counter']['file'], $interval->format('%I') );
                 // seconds
-                imagettftext ($image , $font['size'] , $font['angle'] , $font['x-offset']['seconds'] , $font['y-offset'] , $font['color'] , $font['file'], $interval->format('%S') );
+                imagettftextblur ($image , $font['counter']['size'] , $font['counter']['angle'] , $font['counter']['x-offset']['seconds'] , $font['counter']['y-offset'] , $font['counter']['color'] , $font['counter']['file'], $interval->format('%S') );
 
                 ob_start();
                 imagegif($image);
@@ -145,6 +215,38 @@ class CountdownTimerGif
         imagesavealpha($im,true);
 
         return $im;
+    }
+
+
+    private static function applyIndicatorsToImage($image, $font){
+        /** if we need textBlur or add shadow, the we need to integrate this library
+         * link: https://github.com/andrewgjohnson/imagettftextblur
+         */
+
+        // add indicators glow to image
+        if ($font['indicators']['glowSize'] > 0) {
+            // days
+            imagettftextblur ($image , $font['indicators']['size'] , $font['indicators']['angle'] , $font['indicators']['x-offset']['days'] , $font['indicators']['y-offset'] , $font['indicators']['glowColor'] , $font['indicators']['file'], 'DAYS', $font['indicators']['glowSize'] );
+            // hours
+            imagettftextblur ($image , $font['indicators']['size'] , $font['indicators']['angle'] , $font['indicators']['x-offset']['hours'] , $font['indicators']['y-offset'] , $font['indicators']['glowColor'] , $font['indicators']['file'], 'HOURS', $font['indicators']['glowSize'] );
+            // minutes
+            imagettftextblur ($image , $font['indicators']['size'] , $font['indicators']['angle'] , $font['indicators']['x-offset']['minutes'] , $font['indicators']['y-offset'] , $font['indicators']['glowColor'] , $font['indicators']['file'], 'MINS', $font['indicators']['glowSize'] );
+            // seconds
+            imagettftextblur ($image , $font['indicators']['size'] , $font['indicators']['angle'] , $font['indicators']['x-offset']['seconds'] , $font['indicators']['y-offset'] , $font['indicators']['glowColor'] , $font['indicators']['file'], 'SEC', $font['indicators']['glowSize'] );
+
+        }
+
+        // add indicators to image
+        // days
+        imagettftextblur ($image , $font['indicators']['size'] , $font['indicators']['angle'] , $font['indicators']['x-offset']['days'] , $font['indicators']['y-offset'] , $font['indicators']['color'] , $font['indicators']['file'], 'DAYS' );
+        // hours
+        imagettftextblur ($image , $font['indicators']['size'] , $font['indicators']['angle'] , $font['indicators']['x-offset']['hours'] , $font['indicators']['y-offset'] , $font['indicators']['color'] , $font['indicators']['file'], 'HOURS' );
+        // minutes
+        imagettftextblur ($image , $font['indicators']['size'] , $font['indicators']['angle'] , $font['indicators']['x-offset']['minutes'] , $font['indicators']['y-offset'] , $font['indicators']['color'] , $font['indicators']['file'], 'MINS' );
+        // seconds
+        imagettftextblur ($image , $font['indicators']['size'] , $font['indicators']['angle'] , $font['indicators']['x-offset']['seconds'] , $font['indicators']['y-offset'] , $font['indicators']['color'] , $font['indicators']['file'], 'SEC' );
+
+        return $image;
     }
 
 
